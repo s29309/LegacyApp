@@ -6,10 +6,12 @@ namespace LegacyApp
     {
         private readonly ClientRepository _clientRepository;
         private readonly UserCreditService _userCreditService;
+        private static int _creditlimit;
         public UserService()
         {
             _clientRepository = new ClientRepository();
             _userCreditService = new UserCreditService();
+            _creditlimit = 500;
         }
 
         public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
@@ -25,14 +27,14 @@ namespace LegacyApp
 
             var user = CreateUser(firstName, lastName, email, dateOfBirth, client);
 
-            CalculateCreditLimit(user, client.Type);
-
-            if (user.HasCreditLimit && user.CreditLimit < 500)
+            if (user.HasCreditLimit && user.CreditLimit < _creditlimit)
             {
                 return false;
             }
-
+            
             UserDataAccess.AddUser(user);
+            
+            CalculateCreditLimit(user, client);
             return true;
         }
 
@@ -64,14 +66,14 @@ namespace LegacyApp
             };
         }
 
-        private void CalculateCreditLimit(User user, string type)
+        private void CalculateCreditLimit(User user, Client client)
         {
-            var creditLimit = _userCreditService.GetCreditLimit(user.LastName, user.DateOfBirth);
-            if (type == "ImportantClient")
+            var creditLimit = _userCreditService.GetCreditLimit(client.Name, user.DateOfBirth);
+            if (client.Type == "ImportantClient")
             {
                 creditLimit *= 2;
             }
-            if (type == "VeryImportantClient")
+            if (client.Type == "VeryImportantClient")
             {
                 user.HasCreditLimit = false;
             }
